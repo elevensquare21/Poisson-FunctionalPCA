@@ -120,10 +120,22 @@ for(i in 1:NN){
 long6 = long
 
 #regular Poisson model 
-q=rep(0,no)
-for(i in 1:no){
-	q[i]=rcorr(intensity[,i],y[i,],type='pearson')$P[1,2]
+theta.poi = 1
+long=rep(0,NN)
+for(i in 1:NN){
+	day.sim=intensity[,i]
+	sim=rep(0,720)
+	for(j in 1:720){
+		lam=day.sim[j]
+		sim[j]=rqpois(1,lam, theta.poi)-1
+		sim[j]=ifelse(sim[j]<0,0,sim[j])
+	}
+	day.true=y[i,]
+	long[i]=rcorr(sim,day.true,type='pearson')$P[1,2]
+	
 }
+q=long
+
 
 #boxplot results
 v1=c(long1,long2, long3,long4,long5,long6, q)
@@ -165,23 +177,31 @@ for(i in 1:n){
 }
 
 #regular Poisson model 
-pca.data=matrix(nrow=n,ncol=nn)
+theta.poi = 1
+sim.data=matrix(nrow=n,ncol=nn)
 for(i in 1:n){
-	act=intensity[,i]
+	day.sim=intensity[,i]
+	sim=rep(0,720)
+	for(j in 1:720){
+		lam=day.sim[j]
+		sim[j]=rqpois(1,lam, theta.poi)-1
+		sim[j]=ifelse(sim[j]<0,0,sim[j])
+	}
 	v=rep(NA,nn)
 	for(j in 1:nn){
-		v[j]=sum(act>=breaks[j] & act<breaks[j+1])
+		v[j]=sum(sim>=breaks[j] & sim<breaks[j+1])
 	}
-	pca.data[i,]=v
+	sim.data[i,]=v
 
 }
-pca.eval=rep(NA,n)
+sim.eval=rep(NA,n)
 for(i in 1:n){
 	a=true.data[i,]
-	b=pca.data[i,]
-	pca.eval[i]=dist(rbind(a, b))
+	b=sim.data[i,]
+	sim.eval[i]=dist(rbind(a, b))
 }
-q=pca.eval
+q=sim.eval
+
 
 #same theta for all subjects using Sn
 theta.poi = var(Sn)/panel
